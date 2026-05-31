@@ -19,9 +19,10 @@ enum Theme {
 }
 
 model User {
-  id        String @id @default(uuid())
-  email     String @unique
-  password  String
-  avatar_id String
-  theme     Theme  @default(SYSTEM)
+  id          String  @id @default(uuid())
+  email       String  @unique
+  password    String
+  avatar_id   String
+  theme       Theme   @default(SYSTEM)
+  mfa_token   String?
 }
