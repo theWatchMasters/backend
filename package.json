@@ -1,0 +1,11 @@
+{
+  "name": "orbitalbackend",
+  "packageManager": "yarn@4.9.2",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  }
+}
