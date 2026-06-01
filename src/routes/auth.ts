@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import { getPrismaClient } from "../utils/db/client.js";
 import { validatePassword } from "../utils/auth/password.js";
 import { generateMFAToken } from "../utils/auth/jwt.js";
+import { hashPassword } from "../utils/auth/password.js";
 
 export const loginUser: RequestHandler = async (req, res) => {
     if (req.body === undefined) {
@@ -56,3 +57,67 @@ export const loginUser: RequestHandler = async (req, res) => {
     })
 }
 
+export const registerUser: RequestHandler = async (req, res) => {
+  const { email, password, avatar_id } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, error: "error.missing_fields" });
+  }
+
+  try {
+    const existingUser = await getPrismaClient().user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ success: false, error: "error.email_already_registered" });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const newUser = await getPrismaClient().user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        avatar_id: avatar_id || "default_avatar", // Backup fallback string
+        theme: "SYSTEM"
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      userId: newUser.id
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "error.internal_server_error" });
+  }
+};
+
+export const getCurrentUser: RequestHandler = async (req, res) => {
+  const userId = req.cookies?.__session;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, error: "error.unauthorized" });
+  }
+
+  try {
+    const user = await getPrismaClient().user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        avatar_id: true,
+        theme: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: "error.user_not_found" });
+    }
+
+    return res.json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "error.internal_server_error" });
+  }
+};
