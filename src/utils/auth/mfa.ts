@@ -1,9 +1,9 @@
-import { authenticator } from 'otplib';
+import { generateSecret, generateURI, verify } from 'otplib';
 import QRCode from 'qrcode';
 
 export function generateMFASecret(email: string) {
-  const secret = authenticator.generateSecret();
-  const otpauthUrl = authenticator.keyuri(email, 'WatchMasters', secret);
+  const secret = generateSecret();
+  const otpauthUrl = generateURI({ issuer: email, label: 'WatchMasters', secret });
   
   return { secret, otpauthUrl };
 }
@@ -16,6 +16,6 @@ export async function generateMFAQRCode(otpauthUrl: string): Promise<string> {
   }
 }
 
-export function verifyMFAToken(code: string, secret: string): boolean {
-  return authenticator.verify({ token: code, secret });
+export async function verifyMFAToken(code: string, secret: string): Promise<boolean> {
+  return (await verify({ token: code, secret })).valid;
 }

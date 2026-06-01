@@ -58,6 +58,7 @@ export const verifyMFALogin: RequestHandler = async (req, res) => {
         id: user.id,
         email: user.email,
         avatar_id: user.avatar_id,
+        theme: user.theme
       }
     }).cookie("__session", user.id, {
       httpOnly: true,

@@ -3,6 +3,7 @@ import { getPrismaClient } from "../utils/db/client.js";
 import { validatePassword } from "../utils/auth/password.js";
 import { generateMFAToken } from "../utils/auth/jwt.js";
 import { hashPassword } from "../utils/auth/password.js";
+import { generateAvatarId } from "../utils/auth/avatar.js";
 
 export const loginUser: RequestHandler = async (req, res) => {
     if (req.body === undefined) {
@@ -21,7 +22,6 @@ export const loginUser: RequestHandler = async (req, res) => {
     const user = await getPrismaClient().user.findUnique({ 
         where: { email }
     });
-    console.log(user);
     if (!user) {
         return res.status(400).json({
             success: false,
@@ -43,6 +43,7 @@ export const loginUser: RequestHandler = async (req, res) => {
                 id: user.id,
                 email: user.email,
                 avatar_id: user.avatar_id,
+                theme: user.theme
             }
         }).cookie("__session", user.id, {
             httpOnly: true,
@@ -58,7 +59,7 @@ export const loginUser: RequestHandler = async (req, res) => {
 }
 
 export const registerUser: RequestHandler = async (req, res) => {
-  const { email, password, avatar_id } = req.body;
+  const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, error: "error.missing_fields" });
@@ -67,7 +68,7 @@ export const registerUser: RequestHandler = async (req, res) => {
   try {
     const existingUser = await getPrismaClient().user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ success: false, error: "error.email_already_registered" });
+      return res.status(400).json({ success: false, error: "error.duplicate_credentials" });
     }
 
     const hashedPassword = await hashPassword(password);
@@ -76,15 +77,19 @@ export const registerUser: RequestHandler = async (req, res) => {
       data: {
         email,
         password: hashedPassword,
-        avatar_id: avatar_id || "default_avatar", // Backup fallback string
+        avatar_id: generateAvatarId(email),
         theme: "SYSTEM"
       }
     });
 
     return res.status(201).json({
       success: true,
-      message: "User registered successfully",
-      userId: newUser.id
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        avatar_id: newUser.avatar_id,
+        theme: newUser.theme
+      }
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: "error.internal_server_error" });
@@ -110,7 +115,7 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ success: false, error: "error.user_not_found" });
+      return res.status(404).json({ success: false, error: "error.invalid_credentials" });
     }
 
     return res.json({
