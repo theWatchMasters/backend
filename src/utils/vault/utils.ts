@@ -24,7 +24,7 @@ export const getCurrentTask = async (userId: string): Promise<Task | null> => {
     const task = await prisma.task.findFirst({
         where: {
             user_id: userId,
-            end_time: {
+            ends_at: {
                 gt: now
             }
         },

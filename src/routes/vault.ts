@@ -32,7 +32,7 @@ export const createVault: RequestHandler = async (req, res) => {
                 user_id: res.locals.userId,
                 title: title || "Untitled Vault",
                 ends_at: endTime,
-                length,
+                length: parsedLength,
                 amount
             }
         }),
