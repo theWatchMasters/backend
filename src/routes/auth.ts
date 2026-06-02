@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import { getPrismaClient } from "../utils/db/client.js";
 import { validatePassword } from "../utils/auth/password.js";
-import { generateJWT, generateMFAToken, verifyJWT } from "../utils/auth/jwt.js";
+import { generateJWT, generateMFAToken } from "../utils/auth/jwt.js";
 import { hashPassword } from "../utils/auth/password.js";
 import { generateAvatarId } from "../utils/auth/avatar.js";
 
@@ -44,11 +44,9 @@ export const loginUser: RequestHandler = async (req, res) => {
                 email: user.email,
                 avatar_id: user.avatar_id,
                 theme: user.theme
-            }
-        }).cookie("__session", generateJWT(user.id, user.email), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production"
-        });
+            },
+            access_token: generateJWT(user.id, user.email)
+        })
         return;
     }
     res.json({
@@ -89,7 +87,8 @@ export const registerUser: RequestHandler = async (req, res) => {
                 email: newUser.email,
                 avatar_id: newUser.avatar_id,
                 theme: newUser.theme
-            }
+            },
+            access_token: generateJWT(newUser.id, newUser.email)
         });
     } catch (error) {
         return res.status(500).json({ success: false, error: "error.internal_server_error" });

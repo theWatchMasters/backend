@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import { getPrismaClient } from "../utils/db/client.js";
 import { generateMFASecret, generateMFAQRCode, verifyMFAToken } from "../utils/auth/mfa.js";
 import jwt from 'jsonwebtoken';
-import { generateJWT, verifyJWT } from "../utils/auth/jwt.js";
+import { generateJWT } from "../utils/auth/jwt.js";
 
 export const setupMFA: RequestHandler = async (req, res) => {
   const user = await getPrismaClient().user.findUnique({ where: { id: res.locals.userId } });
@@ -54,10 +54,8 @@ export const verifyMFALogin: RequestHandler = async (req, res) => {
         email: user.email,
         avatar_id: user.avatar_id,
         theme: user.theme
-      }
-    }).cookie("__session", generateJWT(user.id, user.email), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production"
+      },
+      access_token: generateJWT(user.id, user.email)
     });
 
   } catch (error) {
