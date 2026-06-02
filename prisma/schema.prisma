@@ -19,10 +19,25 @@ enum Theme {
 }
 
 model User {
-  id          String  @id @default(uuid())
-  email       String  @unique
-  password    String
-  avatar_id   String
-  theme       Theme   @default(SYSTEM)
-  mfa_token   String?
+  id           String  @id @default(uuid())
+  email        String  @unique
+  password     String
+  avatar_id    String
+  theme        Theme   @default(SYSTEM)
+  mfa_token    String?
+  vault_amount Float   @default(0)
+  tasks        Task[]
+}
+
+model Task {
+  id        String   @id @default(uuid())
+  user_id   String
+  title     String?
+  amount    Float
+  length    Int
+  ends_at   DateTime
+  completed Boolean  @default(false)
+  finished  Boolean  @default(false) // finished means the user has successfully completed the task, completed just means the task has ended (either successfully or unsuccessfully)
+
+  user User @relation(fields: [user_id], references: [id])
 }

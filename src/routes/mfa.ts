@@ -2,15 +2,15 @@ import type { RequestHandler } from "express";
 import { getPrismaClient } from "../utils/db/client.js";
 import { generateMFASecret, generateMFAQRCode, verifyMFAToken } from "../utils/auth/mfa.js";
 import jwt from 'jsonwebtoken';
+import { generateJWT, verifyJWT } from "../utils/auth/jwt.js";
 
 export const setupMFA: RequestHandler = async (req, res) => {
-  const userId = req.headers.authorization || req.cookies?.__session; 
-
-  if (!userId) {
+  const jwt = verifyJWT(req.cookies?.__session || '');
+  if (!jwt) {
     return res.status(401).json({ success: false, error: "error.unauthorized" });
   }
 
-  const user = await getPrismaClient().user.findUnique({ where: { id: userId } });
+  const user = await getPrismaClient().user.findUnique({ where: { id: jwt.id } });
   if (!user) {
     return res.status(404).json({ success: false, error: "error.user_not_found" });
   }
@@ -18,7 +18,7 @@ export const setupMFA: RequestHandler = async (req, res) => {
   const { secret, otpauthUrl } = generateMFASecret(user.email);
   const qrCodeUrl = await generateMFAQRCode(otpauthUrl);
 
- 
+
   await getPrismaClient().user.update({
     where: { id: user.id },
     data: { mfa_token: secret }
@@ -26,8 +26,8 @@ export const setupMFA: RequestHandler = async (req, res) => {
 
   return res.json({
     success: true,
-    qrCode: qrCodeUrl, 
-    secret: secret     
+    qrCode: qrCodeUrl,
+    secret: secret
   });
 };
 
@@ -60,7 +60,7 @@ export const verifyMFALogin: RequestHandler = async (req, res) => {
         avatar_id: user.avatar_id,
         theme: user.theme
       }
-    }).cookie("__session", user.id, {
+    }).cookie("__session", generateJWT(user.id, user.email), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production"
     });
