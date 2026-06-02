@@ -5,12 +5,7 @@ import jwt from 'jsonwebtoken';
 import { generateJWT, verifyJWT } from "../utils/auth/jwt.js";
 
 export const setupMFA: RequestHandler = async (req, res) => {
-  const jwt = verifyJWT(req.cookies?.__session || '');
-  if (!jwt) {
-    return res.status(401).json({ success: false, error: "error.unauthorized" });
-  }
-
-  const user = await getPrismaClient().user.findUnique({ where: { id: jwt.id } });
+  const user = await getPrismaClient().user.findUnique({ where: { id: res.locals.userId } });
   if (!user) {
     return res.status(404).json({ success: false, error: "error.user_not_found" });
   }

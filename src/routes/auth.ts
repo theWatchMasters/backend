@@ -97,14 +97,9 @@ export const registerUser: RequestHandler = async (req, res) => {
 };
 
 export const getCurrentUser: RequestHandler = async (req, res) => {
-    const jwt = verifyJWT(req.cookies?.__session || '');
-    if (!jwt) {
-        return res.status(401).json({ success: false, error: "error.unauthorized" });
-    }
-
     try {
         const user = await getPrismaClient().user.findUnique({
-            where: { id: jwt.id },
+            where: { id: res.locals.userId },
             select: {
                 id: true,
                 email: true,

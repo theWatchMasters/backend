@@ -3,7 +3,8 @@ import cors from 'cors';
 import "dotenv/config";
 import { loginUser, registerUser, getCurrentUser } from './routes/auth.js'; 
 import { setupMFA, verifyMFALogin } from './routes/mfa.js';
-import { ActiveVault, CreateVault, FinishVault, ListVault, UnfinishedVault } from './routes/vault.js';
+import { activeVault, createVault, finishVault, listVault, unfinishedVault } from './routes/vault.js';
+import { authMiddleware } from './utils/auth/middleware.js';
 
 const app = express();
 
@@ -11,18 +12,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post("/vault/new", CreateVault);
-app.get("/vault/list", ListVault);
-app.post("/vault/complete", FinishVault);
-app.post("/vault/incomplete", UnfinishedVault);
-app.get("/vault/active", ActiveVault)
-
+app.get("/vault/list", authMiddleware(listVault));
+app.get("/vault/active", authMiddleware(activeVault));
+app.post("/vault/new", authMiddleware(createVault));
+app.post("/vault/complete", authMiddleware(finishVault));
+app.post("/vault/incomplete", authMiddleware(unfinishedVault));
 
 app.post("/login", loginUser);
 app.post("/register", registerUser);
-app.get("/me", getCurrentUser);
+app.get("/me", authMiddleware(getCurrentUser));
 
-app.post('/mfa/register', setupMFA);
+app.post('/mfa/register', authMiddleware(setupMFA));
 app.post('/mfa', verifyMFALogin);
 
 app.get('/', (req, res) => {
@@ -31,8 +31,6 @@ app.get('/', (req, res) => {
     message: 'success.hello_world',
   });
 });
-
-app.post("/login", loginUser);
 
 
 app.listen(3001, (error) => {
