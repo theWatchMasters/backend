@@ -1,6 +1,6 @@
 {
   "name": "orbitalbackend",
-  "packageManager": "yarn@4.9.2",
+  "packageManager": "yarn@4.16.0",
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",

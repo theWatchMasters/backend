@@ -29,6 +29,7 @@ export const setupMFA: RequestHandler = async (req, res) => {
   return res.json({
     success: true,
     qrCode: qrCodeUrl,
+    url: otpauthUrl,
     secret: secret,
   });
 };
