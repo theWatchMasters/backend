@@ -3,8 +3,12 @@ import QRCode from 'qrcode';
 
 export function generateMFASecret(email: string) {
   const secret = generateSecret();
-  const otpauthUrl = generateURI({ issuer: email, label: 'WatchMasters', secret });
-  
+  const otpauthUrl = generateURI({
+    issuer: email,
+    label: 'WatchMasters',
+    secret,
+  });
+
   return { secret, otpauthUrl };
 }
 
@@ -16,6 +20,9 @@ export async function generateMFAQRCode(otpauthUrl: string): Promise<string> {
   }
 }
 
-export async function verifyMFAToken(code: string, secret: string): Promise<boolean> {
+export async function verifyMFAToken(
+  code: string,
+  secret: string,
+): Promise<boolean> {
   return (await verify({ token: code, secret })).valid;
 }
