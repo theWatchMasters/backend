@@ -5,14 +5,12 @@ import { loginUser, registerUser, getCurrentUser } from './routes/auth.js';
 import { setupMFA, verifyMFALogin } from './routes/mfa.js';
 import { activeVault, createVault, finishVault, listVault, unfinishedVault } from './routes/vault.js';
 import { authMiddleware } from './utils/auth/middleware.js';
-import morgan from 'morgan';
 
 const app = express();
 
 // TODO: Restrict CORS to only allow requests from the frontend
 app.use(cors());
 app.use(express.json());
-// app.use(morgan("dev"))
 
 app.get("/vault/list", authMiddleware(listVault));
 app.get("/vault/active", authMiddleware(activeVault));
