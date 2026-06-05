@@ -32,7 +32,7 @@ export const createVault: RequestHandler = async (req, res) => {
                 user_id: res.locals.userId,
                 title: title || "Untitled Vault",
                 ends_at: endTime,
-                length,
+                length: parsedLength,
                 amount
             }
         }),
@@ -93,5 +93,10 @@ export const finishVault = completeVault(true);
 export const unfinishedVault = completeVault(false);
 
 export const activeVault: RequestHandler = async (req, res) => {
-    return res.json({ success: true, task: await getCurrentTask(res.locals.userId) });
+    const task = await getCurrentTask(res.locals.userId);
+    return res.json({ success: true, task: task && {
+        id: task.id,
+        title: task.title,
+        ends_at: task.ends_at.toISOString()
+    }});
 }

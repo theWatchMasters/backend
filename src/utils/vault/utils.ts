@@ -18,15 +18,17 @@ export const parseLength = (length: string): number | null => {
     return value * LENGTH_MAP[unit];
 }
 
+
 export const getCurrentTask = async (userId: string): Promise<Task | null> => {
     const prisma = getPrismaClient();
     const now = new Date();
     const task = await prisma.task.findFirst({
         where: {
             user_id: userId,
-            end_time: {
+            ends_at: {
                 gt: now
-            }
+            },
+            completed: false
         },
     });
     return task;
