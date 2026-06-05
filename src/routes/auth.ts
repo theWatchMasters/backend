@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import { getPrismaClient } from "../utils/db/client.js";
 import { validatePassword } from "../utils/auth/password.js";
-import { generateMFAToken } from "../utils/auth/jwt.js";
+import { generateJWT, generateMFAToken } from "../utils/auth/jwt.js";
 import { hashPassword } from "../utils/auth/password.js";
 import { generateAvatarId } from "../utils/auth/avatar.js";
 
@@ -19,7 +19,7 @@ export const loginUser: RequestHandler = async (req, res) => {
             error: "error.invalid_credentials",
         });
     }
-    const user = await getPrismaClient().user.findUnique({ 
+    const user = await getPrismaClient().user.findUnique({
         where: { email }
     });
     if (!user) {
@@ -44,11 +44,9 @@ export const loginUser: RequestHandler = async (req, res) => {
                 email: user.email,
                 avatar_id: user.avatar_id,
                 theme: user.theme
-            }
-        }).cookie("__session", user.id, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production"
-        });
+            },
+            access_token: generateJWT(user.id, user.email)
+        })
         return;
     }
     res.json({
@@ -59,70 +57,65 @@ export const loginUser: RequestHandler = async (req, res) => {
 }
 
 export const registerUser: RequestHandler = async (req, res) => {
-  const { email, password } = req.body;
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ success: false, error: "error.missing_fields" });
-  }
-
-  try {
-    const existingUser = await getPrismaClient().user.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ success: false, error: "error.duplicate_credentials" });
+    if (!email || !password) {
+        return res.status(400).json({ success: false, error: "error.missing_fields" });
     }
 
-    const hashedPassword = await hashPassword(password);
+    try {
+        const existingUser = await getPrismaClient().user.findUnique({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({ success: false, error: "error.duplicate_credentials" });
+        }
 
-    const newUser = await getPrismaClient().user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        avatar_id: generateAvatarId(email),
-        theme: "SYSTEM"
-      }
-    });
+        const hashedPassword = await hashPassword(password);
 
-    return res.status(201).json({
-      success: true,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        avatar_id: newUser.avatar_id,
-        theme: newUser.theme
-      }
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: "error.internal_server_error" });
-  }
+        const newUser = await getPrismaClient().user.create({
+            data: {
+                email,
+                password: hashedPassword,
+                avatar_id: generateAvatarId(email),
+                theme: "SYSTEM"
+            }
+        });
+
+        return res.status(201).json({
+            success: true,
+            user: {
+                id: newUser.id,
+                email: newUser.email,
+                avatar_id: newUser.avatar_id,
+                theme: newUser.theme
+            },
+            access_token: generateJWT(newUser.id, newUser.email)
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: "error.internal_server_error" });
+    }
 };
 
 export const getCurrentUser: RequestHandler = async (req, res) => {
-  const userId = req.cookies?.__session;
+    try {
+        const user = await getPrismaClient().user.findUnique({
+            where: { id: res.locals.userId },
+            select: {
+                id: true,
+                email: true,
+                avatar_id: true,
+                theme: true
+            }
+        });
 
-  if (!userId) {
-    return res.status(401).json({ success: false, error: "error.unauthorized" });
-  }
+        if (!user) {
+            return res.status(404).json({ success: false, error: "error.invalid_credentials" });
+        }
 
-  try {
-    const user = await getPrismaClient().user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        avatar_id: true,
-        theme: true
-      }
-    });
-
-    if (!user) {
-      return res.status(404).json({ success: false, error: "error.invalid_credentials" });
+        return res.json({
+            success: true,
+            user
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: "error.internal_server_error" });
     }
-
-    return res.json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: "error.internal_server_error" });
-  }
 };
