@@ -8,7 +8,7 @@ export function generateJWT(userId: string, userEmail: string): string {
   );
 }
 
-export function generateMFAToken(userId: string, userEmail: string): string {
+export function generateMFAJWT(userId: string, userEmail: string): string {
   return jwt.sign(
     { email: userEmail, id: userId, type: 'mfa' },
     process.env.JWT_SECRET!,
@@ -34,7 +34,7 @@ export function verifyJWT(
   }
 }
 
-export function verifyMFAToken(
+export function verifyMFAJWT(
   token: string,
 ): { email: string; id: string } | undefined {
   try {
