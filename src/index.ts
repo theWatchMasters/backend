@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import { loginUser, registerUser, getCurrentUser } from './routes/auth.js';
-import { setupMFA, verifyMFALogin } from './routes/mfa.js';
+import { setupMFA, verifyMFALogin, verifyMFASetup } from './routes/mfa.js';
 import {
   activeVault,
   createVault,
@@ -11,13 +11,15 @@ import {
   unfinishedVault,
 } from './routes/vault.js';
 import { authMiddleware } from './utils/auth/middleware.js';
-
+import morgan from 'morgan';
 const app = express();
 
 // TODO: Restrict CORS to only allow requests from the frontend
 app.use(cors());
 app.use(express.json());
-
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
 app.get('/vault/list', authMiddleware(listVault));
 app.get('/vault/active', authMiddleware(activeVault));
 app.post('/vault/new', authMiddleware(createVault));
@@ -28,6 +30,7 @@ app.post('/login', loginUser);
 app.post('/register', registerUser);
 app.get('/me', authMiddleware(getCurrentUser));
 
+app.post('/mfa/register/verify', authMiddleware(verifyMFASetup));
 app.post('/mfa/register', authMiddleware(setupMFA));
 app.post('/mfa', verifyMFALogin);
 

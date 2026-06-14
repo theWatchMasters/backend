@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import { getPrismaClient } from '../utils/db/client.js';
 import { validatePassword } from '../utils/auth/password.js';
-import { generateJWT, generateMFAToken } from '../utils/auth/jwt.js';
+import { generateJWT, generateMFAJWT } from '../utils/auth/jwt.js';
 import { hashPassword } from '../utils/auth/password.js';
 import { generateAvatarId } from '../utils/auth/avatar.js';
 
@@ -35,7 +35,7 @@ export const loginUser: RequestHandler = async (req, res) => {
       error: 'error.invalid_credentials',
     });
   }
-  if (!user.mfa_token) {
+  if (!user.mfa_enabled) {
     res.json({
       success: true,
       '2fa_enabled': false,
@@ -52,7 +52,7 @@ export const loginUser: RequestHandler = async (req, res) => {
   res.json({
     success: true,
     '2fa_enabled': true,
-    access_token: generateMFAToken(user.id, user.email),
+    access_token: generateMFAJWT(user.id, user.email),
   });
 };
 

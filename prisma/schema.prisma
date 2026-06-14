@@ -25,6 +25,7 @@ model User {
   avatar_id    String
   theme        Theme   @default(SYSTEM)
   mfa_token    String?
+  mfa_enabled  Boolean @default(false) 
   vault_amount Float   @default(0)
   tasks        Task[]
 }

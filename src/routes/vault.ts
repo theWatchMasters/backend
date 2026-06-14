@@ -26,14 +26,14 @@ export const createVault: RequestHandler = async (req, res) => {
   if (amount <= 0 || amount > MAX_AMOUNT) {
     return res
       .status(400)
-      .json({ success: false, error: 'error.invalid_amount' });
+      .json({ success: false, error: 'error.invalid_fields' });
   }
 
   const parsedLength = parseLength(req.body.length);
   if (!parsedLength) {
     return res
       .status(400)
-      .json({ success: false, error: 'error.invalid_length' });
+      .json({ success: false, error: 'error.invalid_fields' });
   }
 
   const endTime = new Date(Date.now() + parsedLength);
