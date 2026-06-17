@@ -31,14 +31,16 @@ model User {
 }
 
 model Task {
-  id        String   @id @default(uuid())
-  user_id   String
-  title     String?
-  amount    Float
-  length    Int
-  ends_at   DateTime
-  completed Boolean  @default(false)
-  finished  Boolean  @default(false) // finished means the user has successfully completed the task, completed just means the task has ended (either successfully or unsuccessfully)
+  id                String   @id @default(uuid())
+  user_id           String
+  title             String?
+  amount            Float
+  deductible_amount Float // The amount of money which can be recovered from the vault
+  length            Int
+  ends_at           DateTime
+  completed         Boolean  @default(false)
+  finished          Boolean  @default(false) // finished means the user has successfully completed the task, completed just means the task has ended (either successfully or unsuccessfully)
 
   user User @relation(fields: [user_id], references: [id])
+  @@index([deductible_amount, ends_at])
 }

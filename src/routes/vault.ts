@@ -1,12 +1,13 @@
 import type { RequestHandler } from 'express';
 import {
   calculateNewVaultAmount,
+  deductFromTasks,
   getCurrentTask,
+  isTaskValid,
   parseLength,
 } from '../utils/vault/utils.js';
 import { getPrismaClient } from '../utils/db/client.js';
 
-const MAX_AMOUNT = 100;
 const PAGE_SIZE = 10;
 export const createVault: RequestHandler = async (req, res) => {
   const { title, length, amount } = req.body;
@@ -22,8 +23,19 @@ export const createVault: RequestHandler = async (req, res) => {
       .status(400)
       .json({ success: false, error: 'error.active_task_exists' });
   }
+  const vaultAmount = await getPrismaClient().user.findUnique({
+    where: {
+      id: res.locals.user_id,
+    },
+    select: {
+      vault_amount: true,
+    },
+  });
 
-  if (amount <= 0 || amount > MAX_AMOUNT) {
+  if (
+    amount <= 0 ||
+    isTaskValid(vaultAmount?.vault_amount || Infinity, amount)
+  ) {
     return res
       .status(400)
       .json({ success: false, error: 'error.invalid_fields' });
@@ -45,6 +57,7 @@ export const createVault: RequestHandler = async (req, res) => {
         title: title || 'Untitled Vault',
         ends_at: endTime,
         length: parsedLength,
+        deductible_amount: amount,
         amount,
       },
     }),
@@ -100,22 +113,33 @@ const completeVault: (arg0: boolean) => RequestHandler =
     });
 
     const prisma = getPrismaClient();
-    await prisma.$transaction([
-      prisma.task.update({
+    await prisma.$transaction(async (prisma) => {
+      await prisma.task.update({
         where: { id },
-        data: { completed: true, finished },
-      }),
-      prisma.user.update({
-        where: { id: res.locals.userId },
         data: {
-          vault_amount: calculateNewVaultAmount(
-            vault_amount,
-            task.amount,
-            finished,
-          ),
+          completed: true,
+          finished,
+          deductible_amount: finished ? 0 : task.amount,
         },
-      }),
-    ]);
+      });
+
+      if (finished) {
+        const vaultDeduction = await deductFromTasks(
+          res.locals.userId,
+          calculateNewVaultAmount(vault_amount, task.amount, finished) -
+            vault_amount,
+          prisma,
+        );
+        await prisma.user.update({
+          where: { id: res.locals.userId },
+          data: {
+            vault_amount: {
+              decrement: vaultDeduction,
+            },
+          },
+        });
+      }
+    });
     res.json({ success: true });
   };
 
