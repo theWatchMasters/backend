@@ -48,3 +48,6 @@ app.listen(3001, (error) => {
   }
   console.log('Server is running on port 3001');
 });
+
+import { sendMagicLink } from './utils/email/utils.js';
+console.log(await sendMagicLink("userId", "aarav.signups@gmail.com"))
