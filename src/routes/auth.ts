@@ -1,10 +1,12 @@
 import type { RequestHandler } from 'express';
 import { getPrismaClient } from '../utils/db/client.js';
 import { validatePassword } from '../utils/auth/password.js';
-import { generateAuthJWT, generateMFAJWT, verifyMagicJWT } from '../utils/auth/jwt.js';
+import { generateAuthJWT, generateEmailResendJWT, generateMFAJWT, verifyEmailResendJWT, verifyMagicJWT } from '../utils/auth/jwt.js';
 import { hashPassword } from '../utils/auth/password.js';
 import { generateAvatarId } from '../utils/auth/avatar.js';
 import { sendMagicLink } from '../utils/email/utils.js';
+
+const EMAIL_RESEND_COOLDOWN = 50 * 1000; // 50 seconds (1 minute - 10 seconds buffer)
 
 export const loginUser: RequestHandler = async (req, res) => {
   if (req.body === undefined) {
@@ -89,6 +91,7 @@ export const registerUser: RequestHandler = async (req, res) => {
     sendMagicLink(newUser.id, newUser.email);
     return res.status(200).json({
       success: true,
+      access_token: generateEmailResendJWT(newUser.id, newUser.email),
     });
   } catch (error) {
     return res
@@ -117,6 +120,34 @@ export const emailVerifyUser: RequestHandler = async (req, res) => {
       avatar_id: newUser.avatar_id,
       theme: newUser.theme,
     }, access_token: generateAuthJWT(jwt.id, jwt.email)
+  });
+}
+export const emailResendUser: RequestHandler = async (req, res) => {
+  const { access_token } = req.body;
+  if (!access_token) {
+    return res.status(400).json({ success: false, error: 'error.invalid_fields' })
+  }
+  const jwt = verifyEmailResendJWT(access_token);
+  if (!jwt) {
+    return res.status(400).json({ success: false, error: 'error.invalid_credentials' });
+  }
+  const user = await getPrismaClient().user.findUnique({
+    where: { id: jwt.id, verified: false },
+    select: { last_verified: true }
+  });
+  if (!user) {
+    return res.status(400).json({ success: false, error: 'error.invalid_credentials' });
+  }
+  if (Date.now() - user.last_verified.getTime() < EMAIL_RESEND_COOLDOWN) {
+    return res.status(429).json({ success: false, error: 'error.too_many_requests' });
+  }
+  await getPrismaClient().user.update({
+    where: { id: jwt.id },
+    data: { last_verified: new Date() }
+  });
+  sendMagicLink(jwt.id, jwt.email);
+  return res.status(200).json({
+    success: true
   });
 }
 

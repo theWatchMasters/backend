@@ -36,7 +36,9 @@ function verifyJWT(type: string): JWTVerifier {
 export const generateAuthJWT = generateJWT("jwt");
 export const generateMFAJWT = generateJWT("mfa", "1h");
 export const generateMagicJWT = generateJWT("magic", "1h");
+export const generateEmailResendJWT = generateJWT("email_resend", "1d");
 
 export const verifyAuthJWT = verifyJWT("jwt");
 export const verifyMFAJWT = verifyJWT("mfa");
 export const verifyMagicJWT = verifyJWT("magic");
+export const verifyEmailResendJWT = verifyJWT("email_resend");

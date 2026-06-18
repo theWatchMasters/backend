@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-import { loginUser, registerUser, getCurrentUser, emailVerifyUser } from './routes/auth.js';
+import { loginUser, registerUser, emailVerifyUser, getCurrentUser, emailResendUser } from './routes/auth.js';
 import { setupMFA, verifyMFALogin, verifyMFASetup } from './routes/mfa.js';
 import {
   activeVault,
@@ -29,6 +29,7 @@ app.post('/vault/incomplete', authMiddleware(unfinishedVault));
 app.post('/login', loginUser);
 app.post('/register', registerUser);
 app.post("/email", emailVerifyUser);
+app.post("/email/resend", emailResendUser);
 app.get('/me', authMiddleware(getCurrentUser));
 
 app.post('/mfa/register/verify', authMiddleware(verifyMFASetup));
