@@ -5,7 +5,7 @@ import {
   generateMFAQRCode,
   verifyMFAToken,
 } from '../utils/auth/mfa.js';
-import { generateJWT, verifyMFAJWT } from '../utils/auth/jwt.js';
+import { generateAuthJWT, verifyMFAJWT } from '../utils/auth/jwt.js';
 
 export const setupMFA: RequestHandler = async (req, res) => {
   const user = await getPrismaClient().user.findUnique({
@@ -128,7 +128,7 @@ export const verifyMFALogin: RequestHandler = async (req, res) => {
         avatar_id: user.avatar_id,
         theme: user.theme,
       },
-      access_token: generateJWT(user.id, user.email),
+      access_token: generateAuthJWT(user.id, user.email),
     });
   } catch (error) {
     return res

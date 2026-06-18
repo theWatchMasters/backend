@@ -2,6 +2,7 @@ import { readFile } from 'fs/promises';
 import pathlib from 'path';
 import { mg } from './mailgun.js';
 import type { MessagesSendResult } from 'mailgun.js/definitions';
+import { generateMagicJWT } from '../auth/jwt.js';
 const TEMPLATE_DIR = pathlib.join(import.meta.dirname, "templates");
 
 async function loadTemplate(name: string): Promise<string | undefined> {
@@ -16,7 +17,7 @@ function applyTemplateVariables(template: string, vars: Record<string, string>):
 
 
 export async function sendMagicLink(userId: string, email: string): Promise<MessagesSendResult> {
-    const templateVariables = { "LINK": userId };
+    const templateVariables = { "LINK": `nowpower://register?id=${generateMagicJWT(userId, email)}` };
     const templateHTML = await loadTemplate("magic.html")
         .then(temp => applyTemplateVariables(temp!, templateVariables));
     const templateTXT = await loadTemplate("magic.txt")

@@ -1,9 +1,10 @@
 import type { RequestHandler } from 'express';
 import { getPrismaClient } from '../utils/db/client.js';
 import { validatePassword } from '../utils/auth/password.js';
-import { generateJWT, generateMFAJWT } from '../utils/auth/jwt.js';
+import { generateAuthJWT, generateMFAJWT, verifyMagicJWT } from '../utils/auth/jwt.js';
 import { hashPassword } from '../utils/auth/password.js';
 import { generateAvatarId } from '../utils/auth/avatar.js';
+import { sendMagicLink } from '../utils/email/utils.js';
 
 export const loginUser: RequestHandler = async (req, res) => {
   if (req.body === undefined) {
@@ -20,7 +21,7 @@ export const loginUser: RequestHandler = async (req, res) => {
     });
   }
   const user = await getPrismaClient().user.findUnique({
-    where: { email },
+    where: { email, verified: true },
   });
   if (!user) {
     return res.status(400).json({
@@ -45,7 +46,7 @@ export const loginUser: RequestHandler = async (req, res) => {
         avatar_id: user.avatar_id,
         theme: user.theme,
       },
-      access_token: generateJWT(user.id, user.email),
+      access_token: generateAuthJWT(user.id, user.email),
     });
     return;
   }
@@ -85,16 +86,9 @@ export const registerUser: RequestHandler = async (req, res) => {
         theme: 'SYSTEM',
       },
     });
-
+    sendMagicLink(newUser.id, newUser.email);
     return res.status(200).json({
       success: true,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        avatar_id: newUser.avatar_id,
-        theme: newUser.theme,
-      },
-      access_token: generateJWT(newUser.id, newUser.email),
     });
   } catch (error) {
     return res
@@ -102,6 +96,29 @@ export const registerUser: RequestHandler = async (req, res) => {
       .json({ success: false, error: 'error.internal_server_error' });
   }
 };
+
+export const emailVerifyUser: RequestHandler = async (req, res) => {
+  const { access_token } = req.body;
+  if (!access_token) {
+    return res.status(400).json({ success: false, error: 'error.invalid_fields' })
+  }
+  const jwt = verifyMagicJWT(access_token);
+  if (!jwt) {
+    return res.status(400).json({ success: false, error: 'error.invalid_credentials' });
+  }
+  const newUser = await getPrismaClient().user.update({
+    where: { id: jwt.id },
+    data: { verified: true }
+  })
+  return res.status(200).json({
+    success: true, user: {
+      id: newUser.id,
+      email: newUser.email,
+      avatar_id: newUser.avatar_id,
+      theme: newUser.theme,
+    }, access_token: generateAuthJWT(jwt.id, jwt.email)
+  });
+}
 
 export const getCurrentUser: RequestHandler = async (req, res) => {
   try {
