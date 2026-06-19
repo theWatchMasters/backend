@@ -54,7 +54,7 @@ export async function sendMagicLink(
   path: string,
 ): Promise<MessagesSendResult> {
   const templateVariables = {
-    LINK: `nowpower://${path}?id=${generateMagicJWT(userId, email)}`,
+    LINK: `${process.env.DOMAIN!}${path}?id=${generateMagicJWT(userId, email)}`,
   };
   const templateHTML = await loadTemplate('magic.html').then((temp) =>
     applyTemplateVariables(temp!, templateVariables),
