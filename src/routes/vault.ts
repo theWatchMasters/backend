@@ -8,6 +8,10 @@ import { getPrismaClient } from '../utils/db/client.js';
 
 const MAX_AMOUNT = 100;
 const PAGE_SIZE = 10;
+
+/**
+ * The createVault function handles the creation of a new vault for a user. The function
+ */
 export const createVault: RequestHandler = async (req, res) => {
   const { title, length, amount } = req.body;
   if (!length || !amount) {

@@ -5,6 +5,7 @@ const once = <T>(f: () => T) => {
   return () => instance ?? (instance = f());
 };
 
+// Currently, we use SQLite3 in development
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL?.replace('file:', '') || './dev.db',
 });
