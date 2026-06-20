@@ -49,15 +49,23 @@ export const isTaskValid = (
 
 export const calculateNewVaultAmount = (
   currentAmount: number,
-  taskAmount: number,
-  isCompleted: boolean,
+  taskAmount: number
 ): number => {
-  if (isCompleted) {
-    return Math.max(currentAmount - taskAmount * MULTIPLIER, 0);
-  }
-  return currentAmount + taskAmount;
+  return Math.max(currentAmount - taskAmount * MULTIPLIER, 0);
 };
 
+/**
+ * Deducts as much money as possible from the user's unfinished tasks,
+ * starting with the ones that expire the soonest until the specified amount is deducted.
+ * 
+ * For example, imagine the tasks as a tuple of (deductible_amount, ends_at): [(10, 3pm), (20, 4pm), (30, 5pm)].
+ * If we want to deduct 25, we would first deduct 10 from the first task, then 15 from the second task, leaving us with [(0, 3pm), (5, 4pm), (30, 5pm)].
+ * 
+ * @param userId The ID of the user
+ * @param amount The amount to deduct
+ * @param prisma An instance of the Prisma client to use for database operations. This is passed for interop with transactions
+ * @return The actual amount deducted
+ */
 export const deductFromTasks = async (
   userId: string,
   amount: number,
@@ -66,7 +74,8 @@ export const deductFromTasks = async (
     '$connect' | '$disconnect' | '$on' | '$use' | '$extends'
   >,
 ) => {
-  const amountCopy = amount;
+  // The maximum amount of tasks we would need to deduct from is amount / MIN_AMOUNT, 
+  // since each task has a minimum deductible amount of MIN_AMOUNT. 
   const tasks = await prisma.task.findMany({
     where: {
       user_id: userId,
@@ -82,23 +91,30 @@ export const deductFromTasks = async (
       deductible_amount: true,
       ends_at: true,
     },
-    take: Math.ceil(MAX_TASK_AMOUNT / MIN_AMOUNT),
+    take: Math.ceil(amount / MIN_AMOUNT),
   });
 
+  
+  // We iterate over the tasks, and subtract as much as possible
+  // We keep track of the maximum ends_at of the tasks we have deducted from, 
+  // then we set the deductible_amount of all tasks that end before that date to 0
+  // instead of manually updating each task one by one
+  let amountLeft = amount;
   let maxDate = new Date(0);
   for (const task of tasks) {
-    if (amount <= 0) break;
-    if (task.deductible_amount >= amount) {
+    if (amountLeft <= 0) break;
+    if (task.deductible_amount > amountLeft) {
+      // If the current task can cover the remaining amount, we deduct the remaining amount from it and break the loop
       await prisma.task.update({
         where: { id: task.id },
         data: {
-          deductible_amount: task.deductible_amount - amount,
+          deductible_amount: task.deductible_amount - amountLeft,
         },
       });
       break;
     }
-    amount -= task.deductible_amount;
-    maxDate = task.ends_at;
+    amountLeft -= task.deductible_amount;
+    maxDate = task.ends_at; 
   }
   await prisma.task.updateMany({
     where: {
@@ -114,5 +130,7 @@ export const deductFromTasks = async (
       deductible_amount: 0,
     },
   });
-  return amountCopy - amount;
+  // amountLeft now stores the difference between the original amount and actual amount deducted
+  // Therefore, amount - amountLeft gives us the actual amount deducted
+  return amount - amountLeft;
 };

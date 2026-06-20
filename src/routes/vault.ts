@@ -126,7 +126,7 @@ const completeVault: (arg0: boolean) => RequestHandler =
       if (finished) {
         const vaultDeduction = await deductFromTasks(
           res.locals.userId,
-          calculateNewVaultAmount(vault_amount, task.amount, finished) -
+          calculateNewVaultAmount(vault_amount, task.amount) -
             vault_amount,
           prisma,
         );
