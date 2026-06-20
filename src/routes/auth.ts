@@ -103,7 +103,7 @@ export const registerUser: RequestHandler = async (req, res) => {
     // Check if a user with the same email already exists
     const existingUser = await getPrismaClient().user.findUnique({
       where: { email },
-      select: {},
+      select: { id: true },
     });
     if (existingUser) {
       return res
@@ -163,10 +163,17 @@ export const emailVerifyUser: RequestHandler = async (req, res) => {
   }
 
   // Update the user to be verified
-  const newUser = await getPrismaClient().user.update({
-    where: { id: jwt.id },
-    data: { verified: true },
-  });
+  let newUser;
+  try {
+    newUser = await getPrismaClient().user.update({
+      where: { id: jwt.id, verified: false },
+      data: { verified: true },
+    });
+  } catch {
+    return res
+      .status(400)
+      .json({ success: false, error: 'error.invalid_credentials' });
+  }
   return res.status(200).json({
     success: true,
     user: {

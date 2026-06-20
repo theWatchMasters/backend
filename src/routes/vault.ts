@@ -127,7 +127,6 @@ export const finishVault = completeVault(true);
 export const unfinishedVault = completeVault(false);
 
 export const activeVault: RequestHandler = async (req, res) => {
-  console.log(res.locals.user_id);
   const task = await getCurrentTask(res.locals.userId);
   return res.json({
     success: true,
