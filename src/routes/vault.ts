@@ -71,19 +71,31 @@ export const createVault: RequestHandler = async (req, res) => {
 
 export const listVault: RequestHandler = async (req, res) => {
   const page = req.query.page ? parseInt(req.query.page as string) : 1;
+  // If the query parameter "unfinished" is set to "true"
+  // We're returning the vault tasks which still have a deductible amount
+  const isUnfinished = req.query.unfinished === 'true';
   if (isNaN(page) || page < 0) {
     return res
       .status(400)
       .json({ success: false, error: 'error.invalid_page' });
   }
-
   const tasks = await getPrismaClient().task.findMany({
-    where: { user_id: res.locals.userId },
-    orderBy: { ends_at: 'desc' },
+    where: {
+      user_id: res.locals.userId,
+      ...(isUnfinished && { completed: true, deductible_amount: { not: 0 } }),
+    },
+    orderBy: { ends_at: isUnfinished ? 'asc' : 'desc' },
     take: page * PAGE_SIZE,
     skip: (page - 1) * PAGE_SIZE,
   });
-  res.json({ success: true, tasks });
+  const length = await getPrismaClient().task.count({
+    where: {
+      user_id: res.locals.userId,
+      ...(isUnfinished && { completed: true, deductible_amount: { not: 0 } }),
+    }
+  });
+  const pages = Math.ceil(length / PAGE_SIZE);
+  res.json({ success: true, tasks, pages });
 };
 
 const completeVault: (arg0: boolean) => RequestHandler =
