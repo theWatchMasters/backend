@@ -69,7 +69,7 @@ export const createVault: RequestHandler = async (req, res) => {
 };
 
 export const listVault: RequestHandler = async (req, res) => {
-  const page = req.query.page ? parseInt(req.query.page as string) : 1;
+  const page = req.query.page ? parseInt(req.query.page as string) : 0;
   // If the query parameter "unfinished" is set to "true"
   // We're returning the vault tasks which still have a deductible amount
   const isUnfinished = req.query.unfinished === 'true';
@@ -82,7 +82,7 @@ export const listVault: RequestHandler = async (req, res) => {
     where: {
       user_id: res.locals.userId,
       ...(isUnfinished && { completed: true, deductible_amount: { not: 0 } }),
-    },  
+    },
     select: {
       id: true,
       title: true,
@@ -94,8 +94,10 @@ export const listVault: RequestHandler = async (req, res) => {
       finished: true
     },
     orderBy: { ends_at: isUnfinished ? 'asc' : 'desc' },
-    take: PAGE_SIZE,
-    skip: page * PAGE_SIZE,
+    ...(!isUnfinished && {
+      take: PAGE_SIZE,
+      skip: page * PAGE_SIZE,
+    })
   });
   const length = await getPrismaClient().task.count({
     where: {
