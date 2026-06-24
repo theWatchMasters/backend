@@ -37,7 +37,7 @@ app.post('/login', loginUser);
 app.post('/register', registerUser);
 app.post('/email', emailVerifyUser);
 app.post('/email/resend', emailResendUser);
-app.post('/data/export', authMiddleware(exportData));
+app.post('/export', authMiddleware(exportData));
 app.get('/me', authMiddleware(getCurrentUser));
 
 app.post('/mfa/register/verify', authMiddleware(verifyMFASetup));
