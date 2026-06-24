@@ -3,6 +3,7 @@ import pathlib from 'path';
 import { mg } from './mailgun.js';
 import type { MessagesSendResult } from 'mailgun.js/definitions';
 import { generateMagicJWT } from '../auth/jwt.js';
+import type { Readable } from 'stream';
 const TEMPLATE_DIR = pathlib.join(import.meta.dirname, 'templates');
 
 /**
@@ -69,5 +70,29 @@ export async function sendMagicLink(
     subject: 'Verify your account | Nowpower.app',
     text: templateTXT,
     html: templateHTML,
+  });
+}
+
+export async function sendDataExport(
+  data: Readable,
+  email: string,
+): Promise<MessagesSendResult> {
+  const templateVariables = {};
+  const templateHTML = await loadTemplate('data.html').then((temp) =>
+    applyTemplateVariables(temp!, templateVariables),
+  );
+  const templateTXT = await loadTemplate('data.txt').then((temp) =>
+    applyTemplateVariables(temp!, templateVariables),
+  );
+  return await mg.messages.create(process.env.MAILGUN_DOMAIN!, {
+    from: process.env.MAILGUN_NOREPLY_EMAIL!,
+    to: [email],
+    subject: 'Your data export | Nowpower.app',
+    text: templateTXT,
+    html: templateHTML,
+    attachment: {
+      filename: `export-${+Date.now()}.json`,
+      data,
+    },
   });
 }
