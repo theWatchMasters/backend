@@ -73,6 +73,12 @@ export async function sendMagicLink(
   });
 }
 
+/**
+ * Sends a data export to a user via email. 
+ * @param data A readable stream containing the data to be exported.
+ * @param email The email address of the user to whom the data export should be sent.
+ * @returns A promise that resolves to the result of the Mailgun API call to send the email, which includes information about the sent message.
+ */
 export async function sendDataExport(
   data: Readable,
   email: string,

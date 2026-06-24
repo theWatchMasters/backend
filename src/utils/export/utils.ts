@@ -12,6 +12,12 @@ export type DataExport = {
   tasks: Task[];
 };
 
+/**
+ * Generates the data export for a user, which includes all non-sensitive information about the user. 
+ * The data export is returned as a readable stream.
+ * @param userId The ID of the user for whom the data export is to be generated.
+ * @returns The data export as a readable stream
+ */
 export async function generateDataExport(userId: string): Promise<Readable> {
   // TODO: make this lazy
   const [user, tasks] = await Promise.all([

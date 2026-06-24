@@ -5,6 +5,13 @@ import { sendDataExport } from '../utils/email/utils.js';
 
 const DATA_EXPORT_RATE_LIMIT = 7 * 24 * 3600 * 1000; // 7 days
 
+/**
+ * Handles the data export process for users. It
+ * 1. Checks if the user has requested a data export within the last 7 days. If so, it returns a 429 status with an error message.
+ * 2. It generates the data export and asynchronously sends it to the user's email address.
+ * 3. Updates the user's last_exported_data timestamp in the database.
+ * 4. Returns a success response.
+ */
 export const exportData: RequestHandler = async (req, res) => {
   const user = await getPrismaClient().user.findUnique({
     where: { id: res.locals.userId },
