@@ -47,11 +47,10 @@ export const isTaskValid = (
   );
 };
 
-export const calculateNewVaultAmount = (
-  currentAmount: number,
+export const calculateDeduction = (
   taskAmount: number
 ): number => {
-  return Math.max(currentAmount - taskAmount * MULTIPLIER, 0);
+  return taskAmount * (MULTIPLIER - 1);
 };
 
 /**
@@ -63,12 +62,14 @@ export const calculateNewVaultAmount = (
  * 
  * @param userId The ID of the user
  * @param amount The amount to deduct
+ * @param id The ID of the task that triggered the deduction. This is used to prevent deducting from the same task multiple times 
  * @param prisma An instance of the Prisma client to use for database operations. This is passed for interop with transactions
  * @return The actual amount deducted
  */
 export const deductFromTasks = async (
   userId: string,
   amount: number,
+  id: string,
   prisma: Omit<
     PrismaClient<never, undefined, DefaultArgs>,
     '$connect' | '$disconnect' | '$on' | '$use' | '$extends'
@@ -82,6 +83,9 @@ export const deductFromTasks = async (
       deductible_amount: {
         gt: 0,
       },
+      id: {
+        not: id,
+      }
     },
     orderBy: {
       ends_at: 'asc',
@@ -111,6 +115,7 @@ export const deductFromTasks = async (
           deductible_amount: task.deductible_amount - amountLeft,
         },
       });
+      amountLeft = 0;
       break;
     }
     amountLeft -= task.deductible_amount;
