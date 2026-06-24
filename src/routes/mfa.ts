@@ -165,7 +165,7 @@ export const verifyMFALogin: RequestHandler = async (req, res) => {
       },
       access_token: generateAuthJWT(user.id, user.email),
     });
-  } catch (error) {
+  } catch {
     return res
       .status(400)
       .json({ success: false, error: 'error.invalid_or_expired_token' });

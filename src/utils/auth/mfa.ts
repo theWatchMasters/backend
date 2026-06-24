@@ -27,7 +27,7 @@ export function generateMFASecret(email: string) {
 export async function generateMFAQRCode(otpauthUrl: string): Promise<string> {
   try {
     return await QRCode.toDataURL(otpauthUrl);
-  } catch (error) {
+  } catch {
     throw new Error('Failed to generate QR code');
   }
 }

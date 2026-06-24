@@ -51,7 +51,7 @@ function verifyJWT(type: string): JWTVerifier {
         return undefined;
       }
       return { email: payload.email, id: payload.id };
-    } catch (err) {
+    } catch {
       return undefined;
     }
   };

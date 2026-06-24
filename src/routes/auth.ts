@@ -129,7 +129,7 @@ export const registerUser: RequestHandler = async (req, res) => {
       success: true,
       access_token: generateEmailResendJWT(newUser.id, newUser.email),
     });
-  } catch (error) {
+  } catch {
     return res
       .status(500)
       .json({ success: false, error: 'error.internal_server_error' });
@@ -273,7 +273,7 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
       success: true,
       user,
     });
-  } catch (error) {
+  } catch {
     return res
       .status(500)
       .json({ success: false, error: 'error.internal_server_error' });
