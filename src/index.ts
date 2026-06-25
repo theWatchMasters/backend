@@ -7,6 +7,7 @@ import {
   emailVerifyUser,
   getCurrentUser,
   emailResendUser,
+  modifyUser,
 } from './routes/auth.js';
 import { setupMFA, verifyMFALogin, verifyMFASetup } from './routes/mfa.js';
 import {
@@ -38,6 +39,7 @@ app.post('/register', registerUser);
 app.post('/email', emailVerifyUser);
 app.post('/email/resend', emailResendUser);
 app.post('/export', authMiddleware(exportData));
+app.patch('/modify', authMiddleware(modifyUser));
 app.get('/me', authMiddleware(getCurrentUser));
 
 app.post('/mfa/register/verify', authMiddleware(verifyMFASetup));

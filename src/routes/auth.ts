@@ -279,3 +279,23 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
       .json({ success: false, error: 'error.internal_server_error' });
   }
 };
+
+/**
+ * Modifies the current user's information. Currently, it only supports modifying the theme.
+ */
+export const modifyUser: RequestHandler = async (req, res) => {
+  if (
+    'theme' in req.body &&
+    !['DARK', 'LIGHT', 'SYSTEM'].includes(req.body.theme)
+  ) {
+    return res
+      .status(400)
+      .json({ success: false, error: 'error.invalid_theme' });
+  }
+  await getPrismaClient().user.update({
+    where: { id: res.locals.userId },
+    data: {
+      theme: req.body.theme,
+    },
+  });
+};
