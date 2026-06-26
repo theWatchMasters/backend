@@ -298,4 +298,5 @@ export const modifyUser: RequestHandler = async (req, res) => {
       theme: req.body.theme,
     },
   });
+  return res.json({ success: true });
 };

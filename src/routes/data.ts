@@ -21,9 +21,6 @@ export const exportData: RequestHandler = async (req, res) => {
     },
   });
   const calculateDelta = (date: Date) => +new Date() - +date;
-  if (user?.last_exported_data) {
-    console.log(calculateDelta(user.last_exported_data));
-  }
   if (
     user?.last_exported_data &&
     calculateDelta(user.last_exported_data) < DATA_EXPORT_RATE_LIMIT
