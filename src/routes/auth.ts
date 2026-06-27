@@ -13,6 +13,9 @@ import { generateAvatarId } from '../utils/auth/avatar.js';
 import { sendMagicLink } from '../utils/email/utils.js';
 
 const EMAIL_RESEND_COOLDOWN = 50 * 1000; // 50 seconds (1 minute - 10 seconds buffer)
+const SSO_ENDPOINTS = {
+  google: 'https://www.googleapis.com/oauth2/v3/tokeninfo',
+} as const;
 
 /**
  * Handle the login of a user. The function
@@ -43,7 +46,7 @@ export const loginUser: RequestHandler = async (req, res) => {
   const user = await getPrismaClient().user.findUnique({
     where: { email, verified: true },
   });
-  if (!user) {
+  if (!user || !user.password) {
     return res.status(400).json({
       success: false,
       error: 'error.invalid_credentials',
@@ -278,4 +281,84 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
       .status(500)
       .json({ success: false, error: 'error.internal_server_error' });
   }
+};
+
+export const ssoUser: RequestHandler = async (req, res) => {
+  const { jwt, type } = req.body;
+  if (!jwt || !type) {
+    return res
+      .status(400)
+      .json({ success: false, error: 'error.missing_fields' });
+  }
+
+  function isEndpointType(type: unknown): type is keyof typeof SSO_ENDPOINTS {
+    return typeof type === 'string' && type in SSO_ENDPOINTS;
+  }
+
+  if (!isEndpointType(type)) {
+    return res
+      .status(400)
+      .json({ success: false, error: 'error.invalid_sso_type' });
+  }
+  let email = '';
+  try {
+    const sanitizedJWT = jwt.replace(/[^a-zA-Z0-9._-]/g, '');
+    const response = await fetch(
+      `${SSO_ENDPOINTS[type]}?access_token=${sanitizedJWT}`,
+    );
+    if (!response.ok) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'error.invalid_sso_token' });
+    }
+    const data = await response.json();
+    email = data.email;
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ success: false, error: 'error.invalid_sso_token' });
+  }
+
+  const user = await getPrismaClient().user.findUnique({
+    where: { email },
+  });
+  if (!user) {
+    const newUser = await getPrismaClient().user.create({
+      data: {
+        email,
+        verified: true,
+        password: null,
+        avatar_id: generateAvatarId(email),
+        theme: 'SYSTEM',
+      },
+    });
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        avatar_id: newUser.avatar_id,
+        theme: newUser.theme,
+      },
+      status: 'new',
+    });
+  }
+  if (user.mfa_enabled) {
+    return res.json({
+      success: true,
+      status: '2fa',
+      access_token: generateMFAJWT(user.id, user.email),
+    });
+  }
+  return res.json({
+    success: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      avatar_id: user.avatar_id,
+      theme: user.theme,
+    },
+    access_token: generateAuthJWT(user.id, user.email),
+    status: 'current',
+  });
 };
