@@ -19,15 +19,17 @@ enum Theme {
 }
 
 model User {
-  id           String  @id @default(uuid())
-  email        String  @unique
-  password     String
-  avatar_id    String
-  theme        Theme   @default(SYSTEM)
-  mfa_token    String?
-  mfa_enabled  Boolean @default(false) 
-  vault_amount Float   @default(0)
-  tasks        Task[]
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String?
+  avatar_id     String
+  theme         Theme    @default(SYSTEM)
+  mfa_token     String?
+  mfa_enabled   Boolean  @default(false)
+  vault_amount  Float    @default(0)
+  verified      Boolean  @default(false) // Whether a user has verified their email
+  last_verified DateTime @default(now()) // The last time an email verification request has been sent
+  tasks         Task[]
 }
 
 model Task {
