@@ -11,11 +11,13 @@ import {
 import { hashPassword } from '../utils/auth/password.js';
 import { generateAvatarId } from '../utils/auth/avatar.js';
 import { sendMagicLink } from '../utils/email/utils.js';
+import { handleDiscordSSO, handleGoogleSSO } from '../utils/sso/providers.js';
 
 const EMAIL_RESEND_COOLDOWN = 50 * 1000; // 50 seconds (1 minute - 10 seconds buffer)
-const SSO_ENDPOINTS = {
-  google: 'https://www.googleapis.com/oauth2/v3/tokeninfo',
-} as const;
+const SSO_HANDLERS = {
+  google: handleGoogleSSO,
+  discord: handleDiscordSSO,
+};
 
 /**
  * Handle the login of a user. The function
@@ -284,15 +286,15 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
 };
 
 export const ssoUser: RequestHandler = async (req, res) => {
-  const { jwt, type } = req.body;
+  const { jwt, type, code_verifier } = req.body;
   if (!jwt || !type) {
     return res
       .status(400)
       .json({ success: false, error: 'error.missing_fields' });
   }
 
-  function isEndpointType(type: unknown): type is keyof typeof SSO_ENDPOINTS {
-    return typeof type === 'string' && type in SSO_ENDPOINTS;
+  function isEndpointType(type: unknown): type is keyof typeof SSO_HANDLERS {
+    return typeof type === 'string' && type in SSO_HANDLERS;
   }
 
   if (!isEndpointType(type)) {
@@ -300,25 +302,12 @@ export const ssoUser: RequestHandler = async (req, res) => {
       .status(400)
       .json({ success: false, error: 'error.invalid_sso_type' });
   }
-  let email = '';
-  try {
-    const sanitizedJWT = jwt.replace(/[^a-zA-Z0-9._-]/g, '');
-    const response = await fetch(
-      `${SSO_ENDPOINTS[type]}?access_token=${sanitizedJWT}`,
-    );
-    if (!response.ok) {
-      return res
-        .status(400)
-        .json({ success: false, error: 'error.invalid_sso_token' });
-    }
-    const data = await response.json();
-    email = data.email;
-  } catch (error) {
+  const email = await SSO_HANDLERS[type](jwt, code_verifier);
+  if (!email) {
     return res
       .status(400)
       .json({ success: false, error: 'error.invalid_sso_token' });
   }
-
   const user = await getPrismaClient().user.findUnique({
     where: { email },
   });
