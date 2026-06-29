@@ -47,22 +47,20 @@ export const isTaskValid = (
   );
 };
 
-export const calculateDeduction = (
-  taskAmount: number
-): number => {
+export const calculateDeduction = (taskAmount: number): number => {
   return taskAmount * (MULTIPLIER - 1);
 };
 
 /**
  * Deducts as much money as possible from the user's unfinished tasks,
  * starting with the ones that expire the soonest until the specified amount is deducted.
- * 
+ *
  * For example, imagine the tasks as a tuple of (deductible_amount, ends_at): [(10, 3pm), (20, 4pm), (30, 5pm)].
  * If we want to deduct 25, we would first deduct 10 from the first task, then 15 from the second task, leaving us with [(0, 3pm), (5, 4pm), (30, 5pm)].
- * 
+ *
  * @param userId The ID of the user
  * @param amount The amount to deduct
- * @param id The ID of the task that triggered the deduction. This is used to prevent deducting from the same task multiple times 
+ * @param id The ID of the task that triggered the deduction. This is used to prevent deducting from the same task multiple times
  * @param prisma An instance of the Prisma client to use for database operations. This is passed for interop with transactions
  * @return The actual amount deducted
  */
@@ -75,8 +73,8 @@ export const deductFromTasks = async (
     '$connect' | '$disconnect' | '$on' | '$use' | '$extends'
   >,
 ) => {
-  // The maximum amount of tasks we would need to deduct from is amount / MIN_AMOUNT, 
-  // since each task has a minimum deductible amount of MIN_AMOUNT. 
+  // The maximum amount of tasks we would need to deduct from is amount / MIN_AMOUNT,
+  // since each task has a minimum deductible amount of MIN_AMOUNT.
   const tasks = await prisma.task.findMany({
     where: {
       user_id: userId,
@@ -85,7 +83,7 @@ export const deductFromTasks = async (
       },
       id: {
         not: id,
-      }
+      },
     },
     orderBy: {
       ends_at: 'asc',
@@ -98,9 +96,8 @@ export const deductFromTasks = async (
     take: Math.ceil(amount / MIN_AMOUNT),
   });
 
-  
   // We iterate over the tasks, and subtract as much as possible
-  // We keep track of the maximum ends_at of the tasks we have deducted from, 
+  // We keep track of the maximum ends_at of the tasks we have deducted from,
   // then we set the deductible_amount of all tasks that end before that date to 0
   // instead of manually updating each task one by one
   let amountLeft = amount;
@@ -119,7 +116,7 @@ export const deductFromTasks = async (
       break;
     }
     amountLeft -= task.deductible_amount;
-    maxDate = task.ends_at; 
+    maxDate = task.ends_at;
   }
   await prisma.task.updateMany({
     where: {

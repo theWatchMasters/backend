@@ -7,6 +7,7 @@ import {
   createVault,
   finishVault,
   listVault,
+  payVault,
   unfinishedVault,
 } from './routes/vault.js';
 import { authMiddleware } from './utils/auth/middleware.js';
@@ -20,6 +21,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 app.get('/vault/list', vaultMiddleware(listVault));
 app.get('/vault/active', vaultMiddleware(activeVault));
+app.post('/vault/pay', vaultMiddleware(payVault));
 app.post('/vault/new', vaultMiddleware(createVault));
 app.post('/vault/complete', vaultMiddleware(finishVault));
 app.post('/vault/incomplete', vaultMiddleware(unfinishedVault));
