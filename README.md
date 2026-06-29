@@ -12,26 +12,30 @@ This is the official repository for the backend of [NowPower](https://github.com
 
 The backend is powered by Express.js. It uses Prisma.js as an ORM to help manage type-safe database-agnostic queries and schemas.
 
-During a future production stage, the backend will interact with a Postgres database due to its useful extensions (e.g., pgvector). However, at the current moment, it interacts with a SQLite3 database locally.
+The backend interacts with a Postgres database due to its useful extensions (e.g., pgvector).
 
 ## Usage
 
-Assuming `yarn@^4.9.0` is installed,
+Assuming `yarn@^4.9.0`, `node@^22.22.0` and Docker are installed,
 
 1. Install dependencies
    ```shell
    yarn
    ```
-2. Copy `.env.example` to `.env`
+2. Set up a Postgres instance
+   ```shell
+   docker run -e POSTGRES_PASSWORD=password -d -p 5432:5432 postgres
    ```
-   DATABASE_URL="file:./dev.db"
+3. Copy `.env.example` to `.env`
+   ```
+   DATABASE_URL=postgresql://postgres:password@localhost:5432/postgres?schema=public
    JWT_SECRET="enter-a-text"
    ```
-3. Generate Prisma client and database
+4. Generate Prisma client and database
    ```shell
    yarn prisma generate && yarn prisma db push
    ```
-4. Start the server
+5. Start the server
    ```shell
    yarn start
    ```
