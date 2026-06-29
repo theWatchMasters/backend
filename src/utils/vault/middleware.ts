@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import { getPrismaClient } from '../db/client.js';
 import { authMiddleware } from '../auth/middleware.js';
+import { capturePayment } from '../payments/utils.js';
 
 const TASK_EXPIRY_LENGTH = 24 * 60 * 60 * 1000; // The deadline before a task expires
 
@@ -41,7 +42,35 @@ async function updateExpiredTask(userId: string) {
           _sum: { deductible_amount: true },
         })
       )._sum.deductible_amount || 0;
-
+    const tasks = await prisma.task.findMany({
+      where: {
+        user_id: userId,
+        ends_at: {
+          lt: new Date(now.getTime() - TASK_EXPIRY_LENGTH),
+        },
+        payment_status: 'AUTHORISED',
+      },
+    });
+    Promise.allSettled(
+      tasks.map(async (task) => {
+        try {
+          await capturePayment(task.payment_intent);
+          await prisma.task.update({
+            where: { id: task.id },
+            data: {
+              payment_status: 'CAPTURED',
+            },
+          });
+        } catch {
+          await prisma.task.update({
+            where: { id: task.id },
+            data: {
+              payment_status: 'CANCELLED',
+            },
+          });
+        }
+      }),
+    );
     await prisma.task.updateMany({
       where: {
         ends_at: {
