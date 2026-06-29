@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import { verifyJWT } from './jwt.js';
+import { getPrismaClient } from '../db/client.js';
 
 export const authMiddleware: (arg0: RequestHandler) => RequestHandler =
   (handler) => async (req, res, next) => {
@@ -19,5 +20,16 @@ export const authMiddleware: (arg0: RequestHandler) => RequestHandler =
     }
     res.locals.userId = jwt.id;
     res.locals.email = jwt.email;
+    if (process.env.NODE_ENV === 'development') {
+      const user = await getPrismaClient().user.findUnique({
+        where: { id: jwt.id },
+      });
+      console.log(user);
+      if (!user) {
+        return res
+          .status(401)
+          .json({ success: false, error: 'error.unauthorized' });
+      }
+    }
     return await handler(req, res, next);
   };

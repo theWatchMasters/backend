@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import 'dotenv/config';
 import { loginUser, registerUser, getCurrentUser } from './routes/auth.js';
 import { setupMFA, verifyMFALogin, verifyMFASetup } from './routes/mfa.js';
@@ -8,23 +7,24 @@ import {
   createVault,
   finishVault,
   listVault,
+  payVault,
   unfinishedVault,
 } from './routes/vault.js';
 import { authMiddleware } from './utils/auth/middleware.js';
 import morgan from 'morgan';
+import { vaultMiddleware } from './utils/vault/middleware.js';
 const app = express();
 
-// TODO: Restrict CORS to only allow requests from the frontend
-app.use(cors());
 app.use(express.json());
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
-app.get('/vault/list', authMiddleware(listVault));
-app.get('/vault/active', authMiddleware(activeVault));
-app.post('/vault/new', authMiddleware(createVault));
-app.post('/vault/complete', authMiddleware(finishVault));
-app.post('/vault/incomplete', authMiddleware(unfinishedVault));
+app.get('/vault/list', vaultMiddleware(listVault));
+app.get('/vault/active', vaultMiddleware(activeVault));
+app.post('/vault/pay', vaultMiddleware(payVault));
+app.post('/vault/new', vaultMiddleware(createVault));
+app.post('/vault/complete', vaultMiddleware(finishVault));
+app.post('/vault/incomplete', vaultMiddleware(unfinishedVault));
 
 app.post('/login', loginUser);
 app.post('/register', registerUser);

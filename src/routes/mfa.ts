@@ -127,6 +127,7 @@ export const verifyMFALogin: RequestHandler = async (req, res) => {
         email: user.email,
         avatar_id: user.avatar_id,
         theme: user.theme,
+        vault_amount: user.vault_amount,
       },
       access_token: generateJWT(user.id, user.email),
     });
