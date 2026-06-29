@@ -44,6 +44,7 @@ export const loginUser: RequestHandler = async (req, res) => {
         email: user.email,
         avatar_id: user.avatar_id,
         theme: user.theme,
+        vault_amount: user.vault_amount,
       },
       access_token: generateJWT(user.id, user.email),
     });
@@ -93,6 +94,7 @@ export const registerUser: RequestHandler = async (req, res) => {
         email: newUser.email,
         avatar_id: newUser.avatar_id,
         theme: newUser.theme,
+        vault_amount: newUser.vault_amount,
       },
       access_token: generateJWT(newUser.id, newUser.email),
     });
@@ -112,6 +114,7 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
         email: true,
         avatar_id: true,
         theme: true,
+        vault_amount: true,
       },
     });
 
@@ -120,7 +123,6 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
         .status(404)
         .json({ success: false, error: 'error.invalid_credentials' });
     }
-
     return res.json({
       success: true,
       user,

@@ -33,6 +33,7 @@
     "jsonwebtoken": "^9.0.3",
     "otplib": "^13.4.1",
     "prisma": "^7.8.0",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "stripe": "^22.3.0"
   }
 }
